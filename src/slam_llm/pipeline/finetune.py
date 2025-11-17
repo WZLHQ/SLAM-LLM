@@ -147,6 +147,7 @@ def main(kwargs: DictConfig):
 
     model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
+    model=model.to(torch.bfloat16) # added by QH
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     

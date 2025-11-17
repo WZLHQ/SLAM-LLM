@@ -88,7 +88,8 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     best_val_acc = 0.0
     for epoch in range(train_config.num_epochs):
         epoch_start_time = time.perf_counter()
-        with MemoryTrace() as memtrace,Join([model]):  # track the memory usage
+        # with MemoryTrace() as memtrace,Join([model]):  # track the memory usage
+        with MemoryTrace() as memtrace: # added by QH
             model.train()
             total_loss = 0.0
             total_acc = 0.0
@@ -110,6 +111,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             for k2 in batch[key].keys():
                                 batch[key][k2] = batch[key][k2].to('cuda:0') if isinstance(batch[key][k2], torch.Tensor) else batch[key][k2]
                 with autocast():
+                    print("------------------>",batch)
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss

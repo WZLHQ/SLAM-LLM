@@ -1,7 +1,7 @@
 #!/bin/bash
-# export PYTHONPATH=/root/whisper:$PYTHONPATH
-export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0,1
+export PYTHONPATH=/root/LLM-based-ASR/whisper:$PYTHONPATH
+# export PYTHONPATH=/root/LLM-based-ASR/fairseq:$PYTHONPATH
+export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -11,16 +11,16 @@ export OMP_NUM_THREADS=1
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=INFO
 
-run_dir=/root/SLAM-LLM
+run_dir=/root/LLM-based-ASR/SLAM-LLM
 cd $run_dir
 code_dir=examples/asr_librispeech
 
-speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v3.pt
-llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
-train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl
-val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other.jsonl
+speech_encoder_path=/root/autodl-tmp/pretrained_models/large-v3.pt
+llm_path=/root/.cache/huggingface/hub/models--lmsys--vicuna-7b-v1.5/snapshots/3321f76e3f527bd14065daf69dad9344000a201d
+train_data_path=/root/autodl-tmp/jsonl_data/librispeech_train-clean-100.jsonl
+val_data_path=/root/autodl-tmp/jsonl_data/librispeech_dev-other.jsonl
 
-output_dir=/root/tmp/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")
+output_dir=/root/autodl-tmp/outputs/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -46,16 +46,25 @@ hydra.run.dir=$output_dir \
 ++train_config.total_steps=100000 \
 ++train_config.lr=1e-4 \
 ++train_config.validation_interval=1000 \
-++train_config.batch_size_training=4 \
-++train_config.val_batch_size=4 \
+++train_config.batch_size_training=1 \
+++train_config.val_batch_size=1 \
 ++train_config.num_workers_dataloader=2 \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
+++train_config.use_fp16=true \
 "
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-    python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_asr.py \
+
+    # 单GPU训练（使用调试器）
+    # python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_asr.py \
+    #     --config-path "conf" \
+    #     --config-name "prompt.yaml" \
+    #     $hydra_args
+
+    # 单GPU训练（不使用调试器）
+    python $code_dir/finetune_asr.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         $hydra_args

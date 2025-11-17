@@ -11,6 +11,10 @@ class ModelConfig:
     llm_path: str = "PATH/to/LLAMA/7B"
     llm_type: str = "decoder_only"
     llm_dim: int = 4096
+
+    whisper_decode : Optional[bool] = False # added by QH
+    encoder_path_hf: Optional[str] = None # added by QH
+
     encoder_name: Optional[str] = None
     encoder_ds_rate: int = 2
     encoder_path: Optional[str] = None
