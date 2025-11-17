@@ -106,6 +106,11 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             # audio_length = calculate_output_length_1d(audio_length, 5, 5, 0) # ad-hoc for 5x cov1d downsample
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
+
+        # 它创建了一个形状为 (audio_length,) 的张量，里面的值全部是 -1。
+        # 这个张量作为占位符，用于以与模型预期的输入结构兼容的格式表示音频输入。
+        # 这个张量的维度为：
+        # (audio_length,) 表示这是一个一维张量，长度为 audio_length。
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
 
         prompt = self.prompt
@@ -143,17 +148,17 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         example_ids = torch.cat((audio_pseudo, example_ids))  # [audio,prompt,answer,eos]
 
         labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
-        labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos];
+        labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos] TODO: bugs may exist
         example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]
 
         label_mask = labels_ids.ge(0)  # [False,False,True,True]
-        example_ids[~example_mask] = 0  # [audio,prompt,answer,eos]
-        labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,-100,answer,eos]
+        example_ids[~example_mask] = 0  # [audio,prompt,answer,eos] 这行代码将example_ids中example_mask为False的位置（即不需要计算loss的位置）填充为0。
+        labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,-100,answer,eos] 这行代码将labels_ids中label_mask为False的位置（即不需要计算loss的位置）填充为self.IGNORE_INDEX（通常是-100），表示这些位置在计算loss时会被忽略。
 
         return {
-            "input_ids": example_ids,
-            "labels": labels_ids,
-            "attention_mask": example_mask,
+            "input_ids": example_ids, # [audio,prompt,answer,eos]
+            "labels": labels_ids, # [-100,-100,answer,eos]
+            "attention_mask": example_mask, # [True,True,True,True]
             "audio": audio_raw if self.input_type == "raw" else None,
             "audio_mel": audio_mel if self.input_type == "mel" else None,
             "audio_length": audio_length,

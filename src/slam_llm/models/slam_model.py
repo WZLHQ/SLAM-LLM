@@ -317,6 +317,7 @@ class slam_model(nn.Module):
             if self.train_config.freeze_encoder: # freeze encoder
                 self.encoder.eval()
 
+            # obtain encoder outputs
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
@@ -351,6 +352,7 @@ class slam_model(nn.Module):
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 
+            # projector
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":
