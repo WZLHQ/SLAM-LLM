@@ -111,7 +111,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             for k2 in batch[key].keys():
                                 batch[key][k2] = batch[key][k2].to('cuda:0') if isinstance(batch[key][k2], torch.Tensor) else batch[key][k2]
                 with autocast():
-                    print("------------------>",batch)
+                    # print("------------------>",batch)
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss

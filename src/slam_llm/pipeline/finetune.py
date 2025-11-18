@@ -44,7 +44,8 @@ import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pathlib import Path
 
-@hydra.main(config_name=None, version_base=None)
+# @hydra.main(config_name=None, version_base=None) # origianal
+@hydra.main(config_name=None)
 def main_hydra(cfg: DictConfig):
     def to_plain_list(cfg_item):
         if isinstance(cfg_item, ListConfig):
@@ -147,7 +148,7 @@ def main(kwargs: DictConfig):
 
     model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
-    model=model.to(torch.bfloat16) # added by QH
+    # model=model.to(torch.bfloat16) # added by QH
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     

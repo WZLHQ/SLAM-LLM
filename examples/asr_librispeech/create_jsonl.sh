@@ -76,7 +76,7 @@ for part in /root/shared-data/Qinghu_data/corpus_downloading_dir/LibriSpeech/*/;
                 transcription_escaped=$(echo "$transcription" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g')
                 
                 # 写入JSONL文件
-                echo "{\"key\": \"${utterance_id}\", \"source\": \"${audio_path}\", \"text\": \"${transcription_escaped}\"}" >> "$jsonl_file"
+                echo "{\"key\": \"${utterance_id}\", \"source\": \"${audio_path}\", \"target\": \"${transcription_escaped}\"}" >> "$jsonl_file"
                 
             done < "$transcript_file"
             
@@ -86,7 +86,3 @@ for part in /root/shared-data/Qinghu_data/corpus_downloading_dir/LibriSpeech/*/;
 done
 
 echo "JSONL files have been created in $output_dir"
-
-# 如何给这个sh加上可行性权限
-# 可以使用以下命令给脚本添加可执行权限：
-# chmod +x create_jsonl.sh
