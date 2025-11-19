@@ -32,7 +32,8 @@ class RunConfig:
     )
 
 
-@hydra.main(config_name=None, version_base=None)
+# @hydra.main(config_name=None, version_base=None) # original
+@hydra.main(config_name=None) # added by QH
 def main_hydra(cfg: DictConfig):
     run_config = RunConfig()
     cfg = OmegaConf.merge(run_config, cfg)

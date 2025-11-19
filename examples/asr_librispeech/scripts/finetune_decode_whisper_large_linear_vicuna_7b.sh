@@ -49,15 +49,15 @@ val_data_path=/root/autodl-tmp/jsonl_data/${valid_jsonl}.jsonl
 output_dir=/root/autodl-tmp/outputs/${speech_encoder}-${LLM}-$special_experiment_key
 
 ckpt_path=${output_dir}/$eval_model_dir
-val_data_path=/root/autodl-tmp/jsonl_data/${test_jsonl}.jsonl
+test_data_path=/root/autodl-tmp/jsonl_data/${test_jsonl}.jsonl
 decode_log=$ckpt_path/decode_${test_jsonl}_beam4
 
 # TODO: are you sure about this? 
-if [[ "$LLM"==*"1B"* ]] || [[ "$LLM"==*"1b"* ]]; then
+if [[ "$LLM" == *"1B"* ]] || [[ "$LLM" == *"1b"* ]]; then
     llm_dim=2048
-elif [[ "$LLM"==*"3B"* ]] || [[ "$LLM"==*"3b"* ]]; then
+elif [[ "$LLM" == *"3B"* ]] || [[ "$LLM" == *"3b"* ]]; then
     llm_dim=3072
-elif [[ "$LLM"==*"7B"* ]] || [[ "$LLM"==*"7b"* ]]; then
+elif [[ "$LLM" == *"7B"* ]] || [[ "$LLM" == *"7b"* ]]; then
     llm_dim=4096
 else
     echo "Unsupported LLM dimension for $LLM"
@@ -68,37 +68,80 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
 
     echo "Starting fine-tuning with $speech_encoder and $LLM ..."
     
-    hydra_args="
-    hydra.run.dir=$output_dir \
-    ++model_config.llm_name=$LLM \
-    ++model_config.llm_path=$llm_path \
-    ++model_config.llm_dim=$llm_dim \
-    ++model_config.encoder_name=$encoder_name \
-    ++model_config.encoder_projector_ds_rate=5 \
-    ++model_config.encoder_path=$speech_encoder_path \
-    ++model_config.encoder_dim=1280 \
-    ++model_config.encoder_projector=linear \
-    ++dataset_config.dataset=speech_dataset \
-    ++dataset_config.train_data_path=$train_data_path \
-    ++dataset_config.val_data_path=$val_data_path \
-    ++dataset_config.input_type=mel \
-    ++dataset_config.mel_size=128 \
-    ++train_config.model_name=asr \
-    ++train_config.num_epochs=$num_epochs \
-    ++train_config.freeze_encoder=true \
-    ++train_config.freeze_llm=true \
-    ++train_config.batching_strategy=custom \
-    ++train_config.warmup_steps=1000 \
-    ++train_config.total_steps=100000 \
-    ++train_config.lr=1e-4 \
-    ++train_config.validation_interval=1000 \
-    ++train_config.batch_size_training=$train_val_batch_size \
-    ++train_config.val_batch_size=$train_val_batch_size \
-    ++train_config.num_workers_dataloader=2 \
-    ++train_config.output_dir=$output_dir \
-    ++metric=acc \
-    ++train_config.use_fp16=true \
-    "
+    if [[ "$encoder_name" == "whisper" ]]; then
+
+        hydra_args="
+        hydra.run.dir=$output_dir \
+        +model_config.llm_name=$LLM \
+        +model_config.llm_path=$llm_path \
+        +model_config.llm_dim=$llm_dim \
+        +model_config.encoder_name=$encoder_name \
+        +model_config.encoder_projector_ds_rate=5 \
+        +model_config.encoder_path=$speech_encoder_path \
+        +model_config.encoder_dim=1280 \
+        +model_config.encoder_projector=linear \
+        +dataset_config.dataset=speech_dataset \
+        +dataset_config.train_data_path=$train_data_path \
+        +dataset_config.val_data_path=$val_data_path \
+        +dataset_config.input_type=mel \
+        +dataset_config.mel_size=128 \
+        +train_config.model_name=asr \
+        +train_config.num_epochs=$num_epochs \
+        +train_config.freeze_encoder=true \
+        +train_config.freeze_llm=true \
+        +train_config.batching_strategy=custom \
+        +train_config.warmup_steps=1000 \
+        +train_config.total_steps=100000 \
+        +train_config.lr=1e-4 \
+        +train_config.validation_interval=1000 \
+        +train_config.batch_size_training=$train_val_batch_size \
+        +train_config.val_batch_size=$train_val_batch_size \
+        +train_config.num_workers_dataloader=2 \
+        +train_config.output_dir=$output_dir \
+        +metric=acc \
+        +train_config.use_fp16=true \
+        "
+
+    elif [[ "$encoder_name" == "hubert" ]]; then
+
+        hydra_args="
+        hydra.run.dir=$output_dir \
+        +model_config.llm_name=$LLM \
+        +model_config.llm_path=$llm_path \
+        +model_config.llm_dim=$llm_dim \
+        +model_config.encoder_name=$encoder_name \
+        +model_config.normalize=true \
+        +model_config.encoder_projector_ds_rate=5 \
+        +model_config.encoder_path=$speech_encoder_path \
+        +model_config.encoder_dim=1280 \
+        +model_config.encoder_type=finetune \
+        +model_config.encoder_projector=linear \
+        +dataset_config.dataset=speech_dataset \
+        +dataset_config.train_data_path=$train_data_path \
+        +dataset_config.val_data_path=$val_data_path \
+        +dataset_config.input_type=raw \
+        +dataset_config.normalize=true \
+        +train_config.model_name=asr \
+        +train_config.num_epochs=$num_epochs \
+        +train_config.freeze_encoder=true \
+        +train_config.freeze_llm=true \
+        +train_config.batching_strategy=custom \
+        +train_config.warmup_steps=1000 \
+        +train_config.total_steps=100000 \
+        +train_config.lr=1e-4 \
+        +train_config.validation_interval=2000 \
+        +train_config.batch_size_training=$train_val_batch_size \
+        +train_config.val_batch_size=$train_val_batch_size \
+        +train_config.num_workers_dataloader=0 \
+        +train_config.output_dir=$output_dir \
+        +metric=acc \
+        +train_config.use_fp16=true \
+        "
+
+    elif [[ "$encoder_name" == "wavlm" ]]; then
+        echo "add wavlm hydra_args"
+        exit 1
+    fi
 
     # -m debugpy --listen 5678 --wait-for-client
     if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
@@ -123,9 +166,9 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
             $code_dir/finetune_asr.py \
             --config-path "conf" \
             --config-name "prompt.yaml" \
-            ++train_config.enable_fsdp=false \
-            ++train_config.enable_ddp=true \
-            ++train_config.use_fp16=true \
+            +train_config.enable_fsdp=false \
+            +train_config.enable_ddp=true \
+            +train_config.use_fp16=true \
             $hydra_args
     fi
 fi
@@ -133,42 +176,86 @@ fi
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
 
     echo "Decoding with the fine-tuned model..."
+    if [[ "$encoder_name" == "whisper" ]]; then
+        # -m debugpy --listen 5678 --wait-for-client
+        python $code_dir/inference_asr_batch.py \
+                --config-path "conf" \
+                --config-name "prompt.yaml" \
+                hydra.run.dir=$ckpt_path \
+                +model_config.llm_name=$LLM \
+                +model_config.llm_path=$llm_path \
+                +model_config.llm_dim=$llm_dim \
+                +model_config.encoder_name=$encoder_name \
+                +model_config.encoder_projector_ds_rate=5 \
+                +model_config.encoder_path=$speech_encoder_path \
+                +model_config.encoder_dim=1280 \
+                +model_config.encoder_projector=linear \
+                +dataset_config.dataset=speech_dataset \
+                +dataset_config.val_data_path=$test_data_path \
+                +dataset_config.input_type=mel \
+                +dataset_config.mel_size=128 \
+                +dataset_config.inference_mode=true \
+                +train_config.model_name=asr \
+                +train_config.freeze_encoder=true \
+                +train_config.freeze_llm=true \
+                +train_config.batching_strategy=custom \
+                +train_config.num_epochs=1 \
+                +train_config.val_batch_size=$train_val_batch_size \
+                +train_config.num_workers_dataloader=2 \
+                +train_config.output_dir=$output_dir \
+                +decode_log=$decode_log \
+                +ckpt_path=$ckpt_path/model.pt \
+                # +peft_ckpt=$ckpt_path \
+                # +train_config.use_peft=true \
+                # +train_config.peft_config.r=32 \
+                # +dataset_config.normalize=true \
+                # +model_config.encoder_projector=q-former \
+                # +dataset_config.fix_length_audio=64 \
 
-    # -m debugpy --listen 5678 --wait-for-client
-    python $code_dir/inference_asr_batch.py \
-            --config-path "conf" \
-            --config-name "prompt.yaml" \
-            hydra.run.dir=$ckpt_path \
-            ++model_config.llm_name="Llama-3.2-1B-Instruct" \
-            ++model_config.llm_path=$llm_path \
-            ++model_config.llm_dim=2048 \
-            ++model_config.encoder_name=whisper \
-            ++model_config.encoder_projector_ds_rate=5 \
-            ++model_config.encoder_path=$speech_encoder_path \
-            ++model_config.encoder_dim=1280 \
-            ++model_config.encoder_projector=linear \
-            ++dataset_config.dataset=speech_dataset \
-            ++dataset_config.val_data_path=$val_data_path \
-            ++dataset_config.input_type=mel \
-            ++dataset_config.mel_size=128 \
-            ++dataset_config.inference_mode=true \
-            ++train_config.model_name=asr \
-            ++train_config.freeze_encoder=true \
-            ++train_config.freeze_llm=true \
-            ++train_config.batching_strategy=custom \
-            ++train_config.num_epochs=1 \
-            ++train_config.val_batch_size=$train_val_batch_size \
-            ++train_config.num_workers_dataloader=2 \
-            ++train_config.output_dir=$output_dir \
-            ++decode_log=$decode_log \
-            ++ckpt_path=$ckpt_path/model.pt \
-            # ++peft_ckpt=$ckpt_path \
-            # ++train_config.use_peft=true \
-            # ++train_config.peft_config.r=32 \
-            # ++dataset_config.normalize=true \
-            # ++model_config.encoder_projector=q-former \
-            # ++dataset_config.fix_length_audio=64 \
+    elif [[ "$encoder_name" == "hubert" ]]; then
+        # -m debugpy --listen 5678 --wait-for-client
+        python $code_dir/inference_asr_batch.py \
+                --config-path "conf" \
+                --config-name "prompt.yaml" \
+                hydra.run.dir=$ckpt_path \
+                +model_config.llm_name=$LLM \
+                +model_config.llm_path=$llm_path \
+                +model_config.llm_dim=$llm_dim \
+                +model_config.encoder_name=$encoder_name \
+                +model_config.normalize=true \
+                +model_config.encoder_projector_ds_rate=5 \
+                +model_config.encoder_path=$speech_encoder_path \
+                +model_config.encoder_dim=1280 \
+                +model_config.encoder_type=finetune \
+                +model_config.encoder_projector=linear \
+                +dataset_config.dataset=speech_dataset \
+                +dataset_config.val_data_path=$test_data_path \
+                +dataset_config.input_type=raw \
+                +dataset_config.inference_mode=true \
+                +dataset_config.normalize=true \
+                +train_config.model_name=asr \
+                +train_config.freeze_encoder=true \
+                +train_config.freeze_llm=true \
+                +train_config.batching_strategy=custom \
+                +train_config.num_epochs=1 \
+                +train_config.val_batch_size=$train_val_batch_size \
+                +train_config.num_workers_dataloader=0 \
+                +train_config.output_dir=$output_dir \
+                +decode_log=$decode_log \
+                +ckpt_path=$ckpt_path/model.pt \
+                # +peft_ckpt=$ckpt_path \
+                # +train_config.use_peft=true \
+                # +train_config.peft_config.r=32 \
+                # +dataset_config.normalize=true \
+                # +model_config.encoder_projector=q-former \
+                # +dataset_config.fix_length_audio=64 \
+
+    elif [[ "$encoder_name" == "wavlm" ]]; then
+        echo "add wavlm hydra_args"
+        exit 1
+    fi
 fi
+
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
 
@@ -177,6 +264,6 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
     python $code_dir/compute_asr_metrics.py \
             --predictions_file_path ${decode_log}_pred \
             --references_file_path ${decode_log}_gt \
-            --results_file_path $ckpt_path/RESULTS.txt \
+            --results_file_path $ckpt_path/RESULTS_for_${test_jsonl}.txt \
 
 fi

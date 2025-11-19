@@ -5,7 +5,8 @@ def tolist(path):
     text_list = []
     with open(path, 'r', encoding='utf-8') as file:
         for line in file:
-            parts = line.strip().split(' ', 1)
+            # TODO can this deal with the None predictions?
+            parts = line.strip().split(None, 1)
             if len(parts) >= 2:
                 text_list.append(parts[1])
     return text_list
@@ -13,6 +14,7 @@ def tolist(path):
 def compute_asr_metrics(predictions_file_path, references_file_path, results_file_path) -> float:
     predictions = tolist(predictions_file_path)
     references = tolist(references_file_path)
+    assert len(predictions) == len(references), "预测和参考的数量不匹配"
     with open(results_file_path, 'w', encoding='utf-8') as result_file:
         for metr in ['cer', 'wer']:
             metric = load(metr)

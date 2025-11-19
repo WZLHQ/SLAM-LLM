@@ -110,7 +110,9 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         if isinstance(batch[key], dict):
                             for k2 in batch[key].keys():
                                 batch[key][k2] = batch[key][k2].to('cuda:0') if isinstance(batch[key][k2], torch.Tensor) else batch[key][k2]
-                with autocast():
+
+                # with autocast(): # original
+                with torch.amp.autocast('cuda'): # added by QH
                     # print("------------------>",batch)
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
@@ -430,7 +432,9 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             # Ensure no gradients are computed for this scope to save memory
             with torch.no_grad():
                 # Forward pass and compute loss
-                with autocast(): # (Fix:MZY): fix expected scalar type mismatch in norm 
+                
+                # with autocast(): # (Fix:MZY): fix expected scalar type mismatch in norm
+                with torch.amp.autocast('cuda'): # added by QH
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss
