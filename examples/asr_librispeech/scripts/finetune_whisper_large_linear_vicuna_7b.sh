@@ -14,19 +14,23 @@ export OMP_NUM_THREADS=1
 run_dir=/root/LLM-based-ASR/SLAM-LLM
 cd $run_dir
 code_dir=examples/asr_librispeech
+special_experiment_key="A1"
 
 speech_encoder_path=/root/autodl-tmp/pretrained_models/large-v3.pt
-llm_path=/root/.cache/huggingface/hub/models--lmsys--vicuna-7b-v1.5/snapshots/3321f76e3f527bd14065daf69dad9344000a201d
+# llm_path=/root/.cache/huggingface/hub/models--lmsys--vicuna-7b-v1.5/snapshots/3321f76e3f527bd14065daf69dad9344000a201d # vicuna-7b-v1.5
+# llm_path=/root/.cache/huggingface/hub/models--meta-llama--Llama-3.2-1B/snapshots/4e20de362430cd3b72f300e6b0f18e50e7166e08 # Llama-3.2-1B
+llm_path=/root/.cache/huggingface/hub/models--meta-llama--Llama-3.2-1B-Instruct/snapshots/9213176726f574b556790deb65791e0c5aa438b6 # Llama-3.2-1B-Instruct
+
 train_data_path=/root/autodl-tmp/jsonl_data/librispeech_train-clean-100.jsonl
 val_data_path=/root/autodl-tmp/jsonl_data/librispeech_dev-other.jsonl
 
-output_dir=/root/autodl-tmp/outputs/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")
+output_dir=/root/autodl-tmp/outputs/Llama-3.2-1B-Instruct-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3-$special_experiment_key
 
 hydra_args="
 hydra.run.dir=$output_dir \
-++model_config.llm_name=vicuna-7b-v1.5 \
+++model_config.llm_name=Llama-3.2-1B-Instruct \
 ++model_config.llm_path=$llm_path \
-++model_config.llm_dim=4096 \
+++model_config.llm_dim=2048 \
 ++model_config.encoder_name=whisper \
 ++model_config.encoder_projector_ds_rate=5 \
 ++model_config.encoder_path=$speech_encoder_path \
@@ -38,7 +42,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.input_type=mel \
 ++dataset_config.mel_size=128 \
 ++train_config.model_name=asr \
-++train_config.num_epochs=3 \
+++train_config.num_epochs=5 \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=true \
 ++train_config.batching_strategy=custom \
@@ -46,8 +50,8 @@ hydra.run.dir=$output_dir \
 ++train_config.total_steps=100000 \
 ++train_config.lr=1e-4 \
 ++train_config.validation_interval=1000 \
-++train_config.batch_size_training=1 \
-++train_config.val_batch_size=1 \
+++train_config.batch_size_training=6 \
+++train_config.val_batch_size=6 \
 ++train_config.num_workers_dataloader=2 \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \

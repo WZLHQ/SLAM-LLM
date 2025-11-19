@@ -20,7 +20,8 @@ import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
-@hydra.main(config_name=None, version_base=None)
+# @hydra.main(config_name=None, version_base=None) # original
+@hydra.main(config_name=None) # added by QH
 def main_hydra(cfg: DictConfig):
 	def to_plain_list(cfg_item):
 		if isinstance(cfg_item, ListConfig):

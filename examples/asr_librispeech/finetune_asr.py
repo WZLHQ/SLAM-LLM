@@ -20,7 +20,8 @@ class RunConfig:
         default=None, metadata={"help": "The path to projector checkpoint"}
     )
 
-@hydra.main(config_name=None, version_base=None)
+# @hydra.main(config_name=None, version_base=None) # origianal
+@hydra.main(config_name=None)
 def main_hydra(cfg: DictConfig):
     run_config = RunConfig()
     cfg = OmegaConf.merge(run_config, cfg)
