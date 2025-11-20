@@ -10,10 +10,11 @@ LLM=$5 # select from Llama-3.2-1B / Llama-3.2-1B-Instruct / Llama-3.2-3B / vicun
 train_jsonl=$6 # select from librispeech_train-clean-100 / librispeech_train-clean-360 / librispeech_train-other-500 (TODO)
 valid_jsonl=$7 # select from librispeech_dev-clean / librispeech_dev-other / librispeech_dev-all (TODO)
 test_jsonl=$8 # select from librispeech_test-clean / librispeech_test-other / librispeech_test-all (TODO)
-train_val_batch_size=$9 # e.g., 6
-eval_model_dir=${10} # e.g., asr_epoch_2_step_4244
+train_batch_size=$9 # e.g., 6
+val_batch_size=${10} # better to be smaller than $train_batch_size
 num_epochs=${11} # e.g., 5
-
+validation_interval=${12}
+eval_model_dir=${13} # e.g., asr_epoch_2_step_4244
 
 if [[ "$speech_encoder" == *"whisper"* ]]; then
     export PYTHONPATH=/root/LLM-based-ASR/whisper:$PYTHONPATH
@@ -93,9 +94,9 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
         +train_config.warmup_steps=1000 \
         +train_config.total_steps=100000 \
         +train_config.lr=1e-4 \
-        +train_config.validation_interval=1000 \
-        +train_config.batch_size_training=$train_val_batch_size \
-        +train_config.val_batch_size=$train_val_batch_size \
+        +train_config.validation_interval=$validation_interval \
+        +train_config.batch_size_training=$train_batch_size \
+        +train_config.val_batch_size=$val_batch_size \
         +train_config.num_workers_dataloader=2 \
         +train_config.output_dir=$output_dir \
         +metric=acc \
@@ -129,9 +130,9 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
         +train_config.warmup_steps=1000 \
         +train_config.total_steps=100000 \
         +train_config.lr=1e-4 \
-        +train_config.validation_interval=2000 \
-        +train_config.batch_size_training=$train_val_batch_size \
-        +train_config.val_batch_size=$train_val_batch_size \
+        +train_config.validation_interval=$validation_interval \
+        +train_config.batch_size_training=$train_batch_size \
+        +train_config.val_batch_size=$val_batch_size \
         +train_config.num_workers_dataloader=0 \
         +train_config.output_dir=$output_dir \
         +metric=acc \
@@ -200,7 +201,7 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
                 +train_config.freeze_llm=true \
                 +train_config.batching_strategy=custom \
                 +train_config.num_epochs=1 \
-                +train_config.val_batch_size=$train_val_batch_size \
+                +train_config.val_batch_size=$val_batch_size \
                 +train_config.num_workers_dataloader=2 \
                 +train_config.output_dir=$output_dir \
                 +decode_log=$decode_log \
@@ -238,7 +239,7 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
                 +train_config.freeze_llm=true \
                 +train_config.batching_strategy=custom \
                 +train_config.num_epochs=1 \
-                +train_config.val_batch_size=$train_val_batch_size \
+                +train_config.val_batch_size=$val_batch_size \
                 +train_config.num_workers_dataloader=0 \
                 +train_config.output_dir=$output_dir \
                 +decode_log=$decode_log \

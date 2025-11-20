@@ -204,7 +204,8 @@ def setup_llm(train_config, model_config, **kwargs):
 
     if train_config.freeze_llm: # TODO:to test offical `freeze_layers` and `num_freeze_layers`
         for name, param in model.named_parameters(): 
-            param.requires_grad = False
+            if "cross_attention_connector" not in name:
+                param.requires_grad = False
         model.eval()
         
     if kwargs.get("peft_ckpt", None): # (FIX:MZY):reload will get wrong results when decoding
@@ -353,12 +354,12 @@ class slam_model(nn.Module):
                 encoder_outs = audio_mel if audio_mel is not None else audio
 
             # projector
-            if self.model_config.encoder_projector == "q-former":
-                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
-            if self.model_config.encoder_projector == "linear":
-                encoder_outs = self.encoder_projector(encoder_outs)
-            if self.model_config.encoder_projector == "cov1d-linear": 
-                encoder_outs = self.encoder_projector(encoder_outs) 
+            # if self.model_config.encoder_projector == "q-former":
+            #     encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
+            # if self.model_config.encoder_projector == "linear":
+            #     encoder_outs = self.encoder_projector(encoder_outs)
+            # if self.model_config.encoder_projector == "cov1d-linear": 
+            #     encoder_outs = self.encoder_projector(encoder_outs) 
 
         if instruct_ids is not None:
             if self.encoder is not None:
@@ -394,12 +395,12 @@ class slam_model(nn.Module):
             inputs_embeds = encoder_outs_pad + inputs_embeds * (~modality_mask[:, :, None])
 
         if kwargs.get("inference_mode", False):
-            return inputs_embeds, attention_mask
+            return inputs_embeds, attention_mask, encoder_outs
 
         if zh_data is not None and en_data is not None:
             model_outputs, acc = self.llm(zh=zh_data, en=en_data)
         else:
-            model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
+            model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels, encoded_speech=encoder_outs)
             acc = -1
             if self.metric:
                 with torch.no_grad():
@@ -424,7 +425,7 @@ class slam_model(nn.Module):
                 ):
         kwargs["inference_mode"] = True
 
-        inputs_embeds, attention_mask = self.forward(
+        inputs_embeds, attention_mask, encoder_outs = self.forward(
             input_ids=input_ids,
             attention_mask=attention_mask,
             position_ids=position_ids,
@@ -452,7 +453,8 @@ class slam_model(nn.Module):
             attention_mask=attention_mask,
             bos_token_id=self.tokenizer.bos_token_id,
             eos_token_id=self.tokenizer.eos_token_id,
-            pad_token_id=self.tokenizer.pad_token_id
+            pad_token_id=self.tokenizer.pad_token_id,
+            encoded_speech=encoder_outs,
         )
 
         return model_outputs
