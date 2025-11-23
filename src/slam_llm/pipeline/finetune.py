@@ -28,6 +28,7 @@ from slam_llm.data.concatenator import ConcatDataset
 
 from slam_llm.utils.model_utils import get_custom_model_factory
 from slam_llm.utils.train_utils import (
+    get_parameter_dtypes,
     train,
     freeze_transformer_layers,
     setup,
@@ -148,9 +149,13 @@ def main(kwargs: DictConfig):
 
     model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
-    # model=model.to(torch.bfloat16) # added by QH
+    print("The model is printed as:",model)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # to see whether the model parameters are in fp16/bf16/fp32
+    # model=model.to(torch.bfloat16)
+    # param_dtypes = get_parameter_dtypes(model)
+    # logger.info(f"Parameter data types are: {param_dtypes}\n")
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
     if (train_config.enable_fsdp or train_config.enable_ddp) and fsdp_config.pure_bf16:

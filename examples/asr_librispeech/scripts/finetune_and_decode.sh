@@ -10,26 +10,28 @@ LLM=$5 # select from Llama-3.2-1B / Llama-3.2-1B-Instruct / Llama-3.2-3B / vicun
 train_jsonl=$6 # select from librispeech_train-clean-100 / librispeech_train-clean-360 / librispeech_train-other-500 (TODO)
 valid_jsonl=$7 # select from librispeech_dev-clean / librispeech_dev-other / librispeech_dev-all (TODO)
 test_jsonl=$8 # select from librispeech_test-clean / librispeech_test-other / librispeech_test-all (TODO)
-train_val_batch_size=$9 # e.g., 6
-eval_model_dir=${10} # e.g., asr_epoch_2_step_4244
+train_batch_size=$9 # e.g., 6
+val_batch_size=${10} # better to be smaller than $train_batch_size
 num_epochs=${11} # e.g., 5
+validation_interval=${12}
+eval_model_dir=${13} # e.g., asr_epoch_2_step_4244
 
-
+root_path=/media/rosie/d921a251-72e5-45d8-9e41-0309cf76c6b4/200_experiments/210_LLM-based_ASR
 if [[ "$speech_encoder" == *"whisper"* ]]; then
-    export PYTHONPATH=/root/LLM-based-ASR/whisper:$PYTHONPATH
+    export PYTHONPATH=${root_path}/whisper:$PYTHONPATH
     encoder_name="whisper"
 elif [[ "$speech_encoder" == *"hubert"* ]]; then
-    export PYTHONPATH=/root/LLM-based-ASR/fairseq:$PYTHONPATH
+    export PYTHONPATH=${root_path}/fairseq:$PYTHONPATH
     encoder_name="hubert"
 elif [[ "$speech_encoder" == *"wavlm"* ]]; then
-    export PYTHONPATH=/root/LLM-based-ASR/fairseq:$PYTHONPATH
+    export PYTHONPATH=${root_path}/fairseq:$PYTHONPATH
     encoder_name="wavlm"
 else
     echo "Unsupported speech encoder: $speech_encoder"
     exit 1
 fi
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=0,1
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -39,17 +41,21 @@ export OMP_NUM_THREADS=1
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=INFO
 
-run_dir=/root/LLM-based-ASR/SLAM-LLM
+run_dir=${root_path}/SLAM-LLM
 cd $run_dir
 code_dir=examples/asr_librispeech
-speech_encoder_path=/root/autodl-tmp/pretrained_models/speech/${speech_encoder}.pt
-llm_path=/root/autodl-tmp/pretrained_models/LLM/${LLM}
-train_data_path=/root/autodl-tmp/jsonl_data/${train_jsonl}.jsonl
-val_data_path=/root/autodl-tmp/jsonl_data/${valid_jsonl}.jsonl
-output_dir=/root/autodl-tmp/outputs/${speech_encoder}-${LLM}-$special_experiment_key
 
+model_path=/media/rosie/d921a251-72e5-45d8-9e41-0309cf76c6b4/200_experiments/210_LLM-based_ASR/pretrained_models
+speech_encoder_path=${model_path}/speech/${speech_encoder}.pt
+llm_path=${model_path}/LLM/${LLM}
+
+data_root_path=/media/rosie/d921a251-72e5-45d8-9e41-0309cf76c6b4/100_global_shared_file/140_SLAM_ASR_datasets/141_librispeech/jsonl_data
+train_data_path=${data_root_path}/${train_jsonl}.jsonl
+val_data_path=${data_root_path}/${valid_jsonl}.jsonl
+test_data_path=${data_root_path}/${test_jsonl}.jsonl
+
+output_dir=/media/rosie/d921a251-72e5-45d8-9e41-0309cf76c6b4/200_experiments/210_LLM-based_ASR/outputs/SLAM_ASR_outputs/${speech_encoder}-${LLM}-$special_experiment_key
 ckpt_path=${output_dir}/$eval_model_dir
-test_data_path=/root/autodl-tmp/jsonl_data/${test_jsonl}.jsonl
 decode_log=$ckpt_path/decode_${test_jsonl}_beam4
 
 # TODO: are you sure about this? 
@@ -93,13 +99,12 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
         +train_config.warmup_steps=1000 \
         +train_config.total_steps=100000 \
         +train_config.lr=1e-4 \
-        +train_config.validation_interval=1000 \
-        +train_config.batch_size_training=$train_val_batch_size \
-        +train_config.val_batch_size=$train_val_batch_size \
-        +train_config.num_workers_dataloader=2 \
+        +train_config.validation_interval=$validation_interval \
+        +train_config.batch_size_training=$train_batch_size \
+        +train_config.val_batch_size=$val_batch_size \
+        +train_config.num_workers_dataloader=6 \
         +train_config.output_dir=$output_dir \
         +metric=acc \
-        +train_config.use_fp16=true \
         "
 
     elif [[ "$encoder_name" == "hubert" ]]; then
@@ -129,13 +134,12 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
         +train_config.warmup_steps=1000 \
         +train_config.total_steps=100000 \
         +train_config.lr=1e-4 \
-        +train_config.validation_interval=2000 \
-        +train_config.batch_size_training=$train_val_batch_size \
-        +train_config.val_batch_size=$train_val_batch_size \
-        +train_config.num_workers_dataloader=0 \
+        +train_config.validation_interval=$validation_interval \
+        +train_config.batch_size_training=$train_batch_size \
+        +train_config.val_batch_size=$val_batch_size \
+        +train_config.num_workers_dataloader=6 \
         +train_config.output_dir=$output_dir \
         +metric=acc \
-        +train_config.use_fp16=true \
         "
 
     elif [[ "$encoder_name" == "wavlm" ]]; then
@@ -158,7 +162,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
             --config-name "prompt.yaml" \
             $hydra_args
     else
-        # 多GPU训练 ?
+        # 多GPU训练
         torchrun \
             --nnodes 1 \
             --nproc_per_node 2 \
@@ -200,8 +204,8 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
                 +train_config.freeze_llm=true \
                 +train_config.batching_strategy=custom \
                 +train_config.num_epochs=1 \
-                +train_config.val_batch_size=$train_val_batch_size \
-                +train_config.num_workers_dataloader=2 \
+                +train_config.val_batch_size=$val_batch_size \
+                +train_config.num_workers_dataloader=6 \
                 +train_config.output_dir=$output_dir \
                 +decode_log=$decode_log \
                 +ckpt_path=$ckpt_path/model.pt \
@@ -238,8 +242,8 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
                 +train_config.freeze_llm=true \
                 +train_config.batching_strategy=custom \
                 +train_config.num_epochs=1 \
-                +train_config.val_batch_size=$train_val_batch_size \
-                +train_config.num_workers_dataloader=0 \
+                +train_config.val_batch_size=$val_batch_size \
+                +train_config.num_workers_dataloader=6 \
                 +train_config.output_dir=$output_dir \
                 +decode_log=$decode_log \
                 +ckpt_path=$ckpt_path/model.pt \

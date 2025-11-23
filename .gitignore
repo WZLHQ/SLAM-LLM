@@ -25,5 +25,6 @@ examples/hotwords_librispeech
 examples/asr_librispeech/scripts/decode_hubert_xtralarge_linear_vicuna_7b_debug.sh
 examples/asr_librispeech/outputs
 examples/asr_librispeech/jsonl_data
-examples/asr_librispeech/Issues.txt
+examples/asr_librispeech/Issues.md
 examples/asr_librispeech/run_log.sh
+examples/asr_librispeech/QH_transformers

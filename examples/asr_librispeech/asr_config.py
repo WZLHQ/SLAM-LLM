@@ -6,7 +6,7 @@ from torch.distributed.fsdp import ShardingStrategy
 
 @dataclass
 class ModelConfig:
-    file: str = "/root/LLM-based-ASR/SLAM-LLM/examples/asr_librispeech/model/slam_model_asr.py:model_factory"
+    file: str = "/media/rosie/d921a251-72e5-45d8-9e41-0309cf76c6b4/200_experiments/210_LLM-based_ASR/SLAM-LLM/examples/asr_librispeech/model/slam_model_asr.py:model_factory"
     llm_name: str = "vicuna-13b-v1.5"
     llm_path: str = "PATH/to/LLAMA/7B"
     llm_type: str = "decoder_only"
@@ -55,7 +55,7 @@ class TrainConfig:
     context_length:int = 4096
     gradient_accumulation_steps:int = 1
     num_epochs:int = 3
-    num_workers_dataloader:int = 1
+    num_workers_dataloader:int = 4
     warmup_steps:int = 1000
     total_steps:int = 100000
     validation_interval:int = 1000
@@ -90,7 +90,7 @@ class TrainConfig:
 @dataclass
 class DataConfig:
     dataset: str = "speech_dataset"
-    file: str = "/root/LLM-based-ASR/SLAM-LLM/src/slam_llm/datasets/speech_dataset.py:get_speech_dataset"
+    file: str = "/media/rosie/d921a251-72e5-45d8-9e41-0309cf76c6b4/200_experiments/210_LLM-based_ASR/SLAM-LLM/src/slam_llm/datasets/speech_dataset.py:get_speech_dataset"
     train_data_path: Optional[str] = None
     val_data_path: Optional[str] = None
     train_split: str = "train"
@@ -126,9 +126,9 @@ class FSDPConfig:
 @dataclass
 class LogConfig:
     use_wandb: bool = False
-    wandb_dir: str = "/root/test_wandb"
+    wandb_dir: str = "/media/rosie/d921a251-72e5-45d8-9e41-0309cf76c6b4/200_experiments/210_LLM-based_ASR/SLAM-LLM/examples/asr_librispeech/test_wandb"
     wandb_entity_name: str = "project_name"
     wandb_project_name: str = "project_name"
     wandb_exp_name: str = "exp_name"
-    log_file: str = "/root/test.log"
+    log_file: str = "/media/rosie/d921a251-72e5-45d8-9e41-0309cf76c6b4/200_experiments/210_LLM-based_ASR/SLAM-LLM/examples/asr_librispeech/test.log"
     log_interval: int = 5

@@ -15,14 +15,16 @@
 #   "source": ".../speaker_id/chapter_id/speaker_id-chapter_id-utterance_id1.flac", # 音频文件的绝对路径
 #   "text": "transcription text"
 # }
-# 请你根据上述要求，完成jsonl格式文件的生成脚本create_jsonl.sh。
+
+# tODO implement multiprocess
 
 #!/bin/bash
 
-output_dir="/root/autodl-tmp/jsonl_data"
+output_dir="/media/rosie/d921a251-72e5-45d8-9e41-0309cf76c6b4/100_global_shared_file/140_SLAM_ASR_datasets/141_librispeech/jsonl_data"
+speech_file='/media/rosie/d921a251-72e5-45d8-9e41-0309cf76c6b4/100_global_shared_file/150_raw_corpora/151_librispeech/LibriSpeech/'
 mkdir -p "$output_dir"
 
-for part in /root/shared-data/Qinghu_data/corpus_downloading_dir/LibriSpeech/*/; do
+for part in ${speech_file}*/; do
     
     part_name=$(basename "$part") # 提取部分名称，如train-clean-100
 

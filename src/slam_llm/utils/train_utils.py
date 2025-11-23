@@ -68,8 +68,10 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     # elif train_config.use_fp16 and not train_config.enable_fsdp:
     #     scaler = torch.cuda.amp.GradScaler()
     if train_config.use_fp16:
+        # scaler = torch.cuda.amp.GradScaler(enabled=False) # modified by QH
         scaler = torch.cuda.amp.GradScaler()
         if train_config.enable_fsdp:
+            # scaler = ShardedGradScaler(enabled=False) # modified by QH
             scaler = ShardedGradScaler()
     if train_config.enable_fsdp or train_config.enable_ddp:
         world_size = int(os.environ["WORLD_SIZE"])
